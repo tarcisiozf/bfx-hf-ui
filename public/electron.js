@@ -12,6 +12,7 @@ const {
   SCRIPT_PATH_API_SERVER,
   LOCAL_STORE_CWD,
 } = require('./constants')
+const { getPortInRange } = require('./utils/ports')
 
 const REQUIRED_PATHS = [LOCAL_STORE_CWD, LOG_PATH]
 
@@ -21,27 +22,45 @@ REQUIRED_PATHS.forEach((dir) => {
   }
 })
 
-const SCRIPT_SPAWN_OPTS = {
-  env: { ELECTRON_RUN_AS_NODE: '1' },
+const SCRIPT_SPAWN_ENVS = {
+  ELECTRON_RUN_AS_NODE: '1',
 }
 
 const dsLogStream = fs.openSync(LOG_PATH_DS_BITFINEX, 'a')
 const apiLogStream = fs.openSync(LOG_PATH_API_SERVER, 'a')
 
-const childDSProcess = fork(path.resolve(SCRIPT_PATH_DS_BITFINEX), [], {
-  ...SCRIPT_SPAWN_OPTS,
-  stdio: [null, dsLogStream, dsLogStream, 'ipc'],
-})
+const startApp = async () => {
+  const [apiPort, dsPort] = await Promise.all([
+    getPortInRange(45000, 45100),
+    getPortInRange(23521, 23600)
+  ])
 
-const childAPIProcess = fork(path.resolve(SCRIPT_PATH_API_SERVER), [], {
-  ...SCRIPT_SPAWN_OPTS,
-  stdio: [null, apiLogStream, apiLogStream, 'ipc'],
-})
+  const childDSProcess = fork(path.resolve(SCRIPT_PATH_DS_BITFINEX), [], {
+    env: {
+      ...SCRIPT_SPAWN_ENVS,
+      port: apiPort
+    },
+    stdio: [null, dsLogStream, dsLogStream, 'ipc'],
+  })
 
-new HFUIApplication({ // eslint-disable-line
-  app,
-  onExit: () => {
-    childAPIProcess.kill('SIGKILL')
-    childDSProcess.kill('SIGKILL')
-  },
+  const childAPIProcess = fork(path.resolve(SCRIPT_PATH_API_SERVER), [], {
+    env: {
+      ...SCRIPT_SPAWN_ENVS,
+      port: dsPort
+    },
+    stdio: [null, apiLogStream, apiLogStream, 'ipc'],
+  })
+
+  return new HFUIApplication({
+    app,
+    onExit: () => {
+      childAPIProcess.kill('SIGKILL')
+      childDSProcess.kill('SIGKILL')
+    },
+  })
+}
+
+startApp().catch(err => {
+  console.log(err)
+  process.exit(1)
 })
