@@ -1,7 +1,12 @@
-# Honey Framework UI
+### IMPORTANT NOTICE
+As [announced](https://www.bitfinex.com/posts/1072/), on November 6, 2024 Bitfinex Honey will no longer support the 'dead-man switch' or 'DMS' feature. This will apply to all versions of Bitfinex Honey. Your version of Bitfinex Honey will be affected. 
+This change will mean that the orders you created using any version of Bitfinex Honey will continue running even if you turn off the machine running Bitfinex Honey. Previously, the DMS feature would have stopped those orders when you disconnected. If you do not want those orders to continue, you can close open orders before you disconnect Bitfinex Honey, or close them manually by logging into Bitfinex. 
+Please plan accordingly for this change.
+
+# Bitfinex Honey UI
 
 - Creates HF services as background processes
-- Enables order types (Accum/Dist, MA Crossover, Ping/Pong, Iceberg, TWAP and OCOCO)
+- Enables order types (Accum/Dist, Ping/Pong, Iceberg, TWAP and OCOCO)
 - Define and backtest trading strategies
 
 ## Installation
@@ -18,10 +23,11 @@ npm install
 Create folder to store local db
 
 ```
-mkdir ~/.honeyframework
-touch ~/.honeyframework/algos.json
-touch ~/.honeyframework/hf-bitfinex.json
-touch ~/.honeyframework/ui.json
+mkdir ~/.bitfinexhoney
+touch ~/.bitfinexhoney/algos.json
+touch ~/.bitfinexhoney/hf-bitfinex.json
+touch ~/.bitfinexhoney/ui.json
+touch ~/.bitfinexhoney/strategy-executions.json
 ```
 
 ## Run Electron version in the browser
@@ -29,6 +35,7 @@ touch ~/.honeyframework/ui.json
 ```bash
 npm run start-ds-bitfinex
 npm run start-api-server
+npm run build-css
 npm run start
 ```
 
@@ -55,7 +62,7 @@ Head to the latest cut [releases](https://github.com/bitfinexcom/bfx-hf-ui/relea
 
 ## The UI
 
-Starting the HF UI will spawn all of the Honey Framework services that are needed to register custom algo-order definitions in the background. Currently (as of release 1.0.0) the UI will register the built in default order types which will be instantly available for use in the bitfinex.com UI. For more info on how to use algo orders once the UI is running head [here](https://medium.com/bitfinex/announcing-the-honey-framework-algorithmic-orders-8065fb70c65c).
+Starting the Bitfinex Honey UI will spawn all of the Bitfinex Honey services that are needed to register custom algo-order definitions in the background. Currently (as of release 1.0.0) the UI will register the built in default order types which will be instantly available for use in the bitfinex.com UI. For more info on how to use algo orders once the UI is running head [here](https://medium.com/bitfinex/announcing-the-honey-framework-algorithmic-orders-8065fb70c65c).
 
 ![Alt text](res/bfx-hf-ui.png "Title")
 

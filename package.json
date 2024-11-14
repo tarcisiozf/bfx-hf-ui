@@ -1,14 +1,16 @@
 {
   "name": "bfx-hf-ui",
-  "version": "3.23.0",
-  "description": "Official bitfinex honey framework UI - for live trading and executing algorithmic orders/strategies",
+  "version": "3.31.8",
+  "description": "Official Bitfinex Honey UI - for live trading and executing algorithmic orders/strategies",
   "engines": {
-    "node": ">=6"
+    "node": ">=18"
   },
+  "type": "commonjs",
   "main": "./build/electron.js",
   "homepage": "./",
+  "productName": "Bitfinex Honey",
   "build": {
-    "productName": "The Honey Framework",
+    "productName": "Bitfinex Honey",
     "files": [
       "build/**/*",
       "node_modules/**/*",
@@ -17,34 +19,40 @@
       "clear.sh"
     ],
     "asar": false,
-    "appId": "com.bfx-hf-ui",
+    "appId": "com.bitfinex.honey",
     "directories": {
       "buildResources": "public"
     },
     "mac": {
+      "type": "development",
       "icon": "build/icon.png",
       "hardenedRuntime": true,
+      "gatekeeperAssess": false,
       "artifactName": "${productName}-${version}-${arch}-${os}.${ext}",
       "category": "public.app-category.productivity",
       "target": [
-        "mas"
+        "dir",
+        "zip"
       ]
     },
     "win": {
       "icon": "build/icon.png",
       "target": [
-        "dir"
+        "zip",
+        "nsis"
       ],
-      "publisherName": "Honey Framework UI"
+      "publisherName": "Bitfinex Honey UI",
+      "verifyUpdateCodeSignature": false
     },
     "linux": {
       "icon": "build/icon.png",
       "artifactName": "${productName}-${version}-${arch}-${os}.${ext}",
-      "description": "Honey Framework UI",
+      "description": "Bitfinex Honey UI",
       "maintainer": "<bitfinex.com>",
       "category": "Network",
       "target": [
-        "dir"
+        "zip",
+        "AppImage"
       ]
     },
     "dmg": {
@@ -69,15 +77,15 @@
     }
   },
   "scripts": {
-    "preinstall": "cd ./bfx-hf-ui-core && npm install",
+    "preinstall": "cd ./bfx-hf-ui-core && npm install --omit='optional'",
     "build-css": "cd ./bfx-hf-ui-core && npm run build-css",
     "watch-css": "cd ./bfx-hf-ui-core && npm run watch-css",
     "start-server": "cross-env concurrently --kill-others \"npm run start-api-server\" \"npm run start-ds-bitfinex\"",
-    "start-api-server": "cross-env ALGO_LOG=true ALGO_LOG_DIR=logs node scripts/start-api-server.js",
+    "start-api-server": "env-cmd node scripts/start-api-server.js",
     "start-ds-bitfinex": "cross-env node scripts/start-ds-bitfinex.js",
-    "start": "cd ./bfx-hf-ui-core && cross-env REACT_APP_DEV=1 REACT_APP_WSS_URL=ws://localhost:45000 REACT_APP_DS_URL=ws://localhost:23521 REACT_APP_UFX_API_URL=http://localhost:45001 REACT_APP_UFX_PUBLIC_API_URL=http://localhost:45001 REACT_APP_UFX_WSS_URL=wss://api-pub.bitfinex.com/ws/2 REACT_APP_IS_ELECTRON_APP=true node scripts/start.js",
+    "start": "cd ./bfx-hf-ui-core && cross-env REACT_APP_DEV=1 env-cmd -f ../.env npx react-scripts start",
     "prebuild": "cd ./bfx-hf-ui-core && git checkout -- .",
-    "build": "npm run fetch-core && npm run update-core && npm run preinstall && cd bfx-hf-ui-core && cross-env GENERATE_SOURCEMAP=false npm run build-css && cross-env REACT_APP_WSS_URL=ws://localhost:45000 REACT_APP_DS_URL=ws://localhost:23521 REACT_APP_UFX_API_URL=http://localhost:45001 REACT_APP_UFX_PUBLIC_API_URL=http://localhost:45001 REACT_APP_UFX_WSS_URL=wss://api-pub.bitfinex.com/ws/2 REACT_APP_IS_ELECTRON_APP=true node scripts/build.js",
+    "build": "npm run fetch-core && npm run update-core && npm run preinstall && cd bfx-hf-ui-core && env-cmd -f ../.env npm run build-css && env-cmd -f ../.env npx react-scripts build",
     "update-core": "git submodule update --remote --merge",
     "fetch-core": "git submodule update --init --recursive",
     "postbuild": "run-script-os",
@@ -86,7 +94,10 @@
     "dev": "cross-env concurrently --kill-others \"npm run start-server\" \"npm run start\"",
     "electron-dev": "cross-env concurrently \"BROWSER=none npm run start-server\"  & electron .",
     "electron": "cross-env electron .",
+    "electron-debug": "cross-env REACT_APP_ELECTRON_DEBUG='true' electron --inspect=9229 --remote-debugging-port=9222 .",
     "pack": "cross-env ./node_modules/.bin/electron-builder --dir",
+    "deploy": "npm run build && cross-env electron-builder build -c.extraMetadata.main=build/electron.js -lwm --publish always",
+    "build-all": "npm run build && cross-env electron-builder build -c.extraMetadata.main=build/electron.js -lwm --publish never",
     "dist-win-unpruned": "cross-env electron-builder --win -c.extraMetadata.main=build/electron.js --publish never",
     "dist-win": "cross-env npm run dist-win-unpruned && npm run package-win",
     "dist-mac": "cross-env electron-packager --prune . --overwrite --platform=mas --arch=x64 --icon=build/icon.png --out=dist && npm run package-mac",
@@ -94,16 +105,17 @@
     "package-mac": "cd dist/bfx-hf-ui-mas-x64/bfx-hf-ui.app/Contents/Resources/app && sh clear.sh && node-prune && cd ../../../../../../ && zip --symlinks -r ./dist/bfx-hf-ui-mac-x64.zip ./dist/bfx-hf-ui-mas-x64 && cd ./dist/ && sha256sum bfx-hf-ui-mac-x64.zip >> sha256sums.asc && cd ..",
     "package-win": "cd dist/win-unpacked/resources/app && sh clear.sh && node-prune && cd ../../../../ && zip --symlinks -r ./dist/The.Honey.Framework-win.zip ./dist/win-unpacked && cd ./dist/ && sha256sum The.Honey.Framework-win.zip >> sha256sums.asc && cd ..",
     "package-linux": "cd dist/linux-unpacked/resources/app && sh clear.sh && node-prune && cd ../../../.. && zip --symlinks -r ./dist/The.Honey.Framework-x64-linux.zip ./dist/linux-unpacked && cd ./dist/ && sha256sum The.Honey.Framework-x64-linux.zip >> sha256sums.asc && cd ..",
-    "release": "electron-builder -p always"
+    "release": "electron-builder -p always",
+    "lint": "cross-env eslint --fix public && eslint --fix scripts"
   },
   "author": "Bitfinex",
   "license": "Apache-2.0",
   "bugs": {
-    "url": "https://github.com/bitfinexcom/honey-framework-ui/issues"
+    "url": "https://github.com/bitfinexcom/bfx-hf-ui/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/bitfinexcom/honey-framework-ui.git"
+    "url": "https://github.com/bitfinexcom/bfx-hf-ui.git"
   },
   "keywords": [
     "bitfinex",
@@ -111,25 +123,36 @@
     "BTC"
   ],
   "devDependencies": {
-    "babel-preset-react-app": "^9.0.0",
-    "browserslist": "^4.16.6",
-    "electron": "^13.0.1",
-    "electron-builder": "^22.11.1",
-    "electron-packager": "15.2.0",
+    "babel-preset-react-app": "^10.0.1",
+    "browserslist": "^4.22.0",
+    "electron": "^26.2.3",
+    "electron-builder": "^24.6.4",
+    "electron-packager": "17.1.2",
+    "eslint": "^8.50.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.28.1",
     "node-prune": "^1.0.2",
     "run-script-os": "^1.1.6"
   },
   "dependencies": {
-    "bfx-hf-data-server": "git+https://github.com/bitfinexcom/bfx-hf-data-server.git#v3.0.9",
-    "bfx-hf-ext-plugin-bitfinex": "git+https://github.com/bitfinexcom/bfx-hf-ext-plugin-bitfinex.git#v1.0.11",
-    "bfx-hf-models": "git+https://github.com/bitfinexcom/bfx-hf-models.git#v2.4.1",
-    "bfx-hf-models-adapter-lowdb": "git+https://github.com/bitfinexcom/bfx-hf-models-adapter-lowdb.git#v1.0.5",
-    "bfx-hf-server": "git+https://github.com/bitfinexcom/bfx-hf-server.git#v4.16.0",
-    "bfx-hf-util": "github:bitfinexcom/bfx-hf-util#v1.0.12",
-    "concurrently": "^6.3.0",
-    "cross-env": "^7.0.2",
-    "dotenv": "^8.2.0",
-    "open": "^7.0.1"
+    "adm-zip": "^0.5.10",
+    "bfx-hf-data-server": "git+https://github.com/bitfinexcom/bfx-hf-data-server.git#v5.0.0",
+    "bfx-hf-ext-plugin-bitfinex": "git+https://github.com/bitfinexcom/bfx-hf-ext-plugin-bitfinex.git#v1.0.13",
+    "bfx-hf-models": "git+https://github.com/bitfinexcom/bfx-hf-models.git#v4.0.1",
+    "bfx-hf-models-adapter-lowdb": "git+https://github.com/bitfinexcom/bfx-hf-models-adapter-lowdb.git#v1.0.6",
+    "bfx-hf-server": "git+https://github.com/bitfinexcom/bfx-hf-server.git#v10.1.0",
+    "bfx-hf-util": "git+https://github.com/bitfinexcom/bfx-hf-util#v1.0.12",
+    "concurrently": "^8.2.1",
+    "cross-env": "^7.0.3",
+    "dotenv": "^16.3.1",
+    "electron-log": "^4.4.8",
+    "electron-root-path": "git+https://github.com/dmytroshch/npm-electron-root-path.git#update-deps",
+    "electron-serve": "^1.1.0",
+    "electron-updater": "^6.1.4",
+    "electron-util": "^0.17.2",
+    "electron-window-state": "^5.0.3",
+    "env-cmd": "^10.1.0",
+    "extract-zip": "^2.0.1"
   },
   "browserslist": {
     "production": [
